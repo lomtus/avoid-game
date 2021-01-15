@@ -98,8 +98,8 @@ void advanceMeteor(char* meteor, byte newMeteor){
 // to move the ship upper or lower  and look if there is a collision
 boolean drawShip(byte position, char* terrainUpper, char* terrainLower, unsigned int score ){
 	boolean collide = false;
-	char upperSave = terrainUpper[SHIP_HORIZONTAL_POSITION];
-	char lowerSave = terrainLower[SHIP_HORIZONTAL_POSITION];
+	char upperSave = terrainUpper[SHIP_HORIZONTAL_POSITION]; //  save the position of the ship in the upper line
+	char lowerSave = terrainLower[SHIP_HORIZONTAL_POSITION];//  save the position of the ship in the lower line
 	byte upper,lower;
 
 	switch (position){ //if status empty don't print the screen
@@ -125,22 +125,22 @@ boolean drawShip(byte position, char* terrainUpper, char* terrainLower, unsigned
 	        terrainLower[SHIP_HORIZONTAL_POSITION] = lower;
 	        collide |= (lowerSave == SPRITE_METEOR_EMPTY) ? false : true;
 	    }
-
+		// avoid the print of meteor on the score already print on the screen
 	    byte digits = (score > 9999) ? 5 : (score > 999) ? 4 : (score > 99) ? 3 : (score > 9) ? 2 : 1;
 
 	    // Draw the scene
 	    terrainUpper[TERRAIN_WIDTH] = '\0';
 	    terrainLower[TERRAIN_WIDTH] = '\0';
 	    char temp = terrainUpper[16-digits];
-	    terrainUpper[16-digits] = '\0';
+	    terrainUpper[16-digits] = '\0'; //cancel the print of the meteor on the score
 	    lcd.setCursor(0,0);
-	    lcd.print(terrainUpper);
-	    terrainUpper[16-digits] = temp;
+	    lcd.print(terrainUpper); // print hte upper line
+	    terrainUpper[16-digits] = temp; //give back the real value
 	    lcd.setCursor(0,1);
-	    lcd.print(terrainLower);
+	    lcd.print(terrainLower);// print hte lower line
 
 	    lcd.setCursor(16 - digits,0);
-	    lcd.print(score);
+	    lcd.print(score); //print the score
 
 	    terrainUpper[SHIP_HORIZONTAL_POSITION] = upperSave;
 	    terrainLower[SHIP_HORIZONTAL_POSITION] = lowerSave;
@@ -154,11 +154,10 @@ void setup (){
 	// BUTTONS CONTROLLER
 	DDRD &= ~(1<<DDD0) | ~(1<<DDD1) | ~(1<<DDD2) | ~(1<<DDD3); // Direction of port line (0 - input)
 
-	//pinmode
 
     initializeGraphics();
 
-    lcd.begin(16, 2);
+    lcd.begin(16, 2); // initialize the screen
 }
 
 void loop(){
@@ -174,7 +173,7 @@ void loop(){
     int i,y = 0;
     int rand ;
 
-    //if not playing blink the sreen and print "press start" and if one button press set the position of the ship lower and start the game
+    //if not playing blink the sreen and print "press start" 
     if (!playing){
     	drawShip((blink) ? SHIP_POSITION_OFF : shipPos, terrainUpper, terrainLower, distance >> 3);
 
@@ -185,7 +184,8 @@ void loop(){
 
     	delay(250);
     	blink = !blink;
-
+	
+	    // when one button is press start the game
     	if (!(PIND & 1<<PIND1) || !(PIND & 1<<PIND0)){
     		initializeGraphics();
     		shipPos = SHIP_POSITION_LOWER;
@@ -200,7 +200,7 @@ void loop(){
     advanceMeteor(terrainUpper, newMeteorType == METEOR_UPPER_BLOCK ? SPRITE_METEOR : SPRITE_METEOR_EMPTY);
 
 
-    //try
+    //try to count to avoid repetition of meteor on the same line during a long time 
     	if (rand == 0){
     		i ++;
     	 }else {
@@ -221,32 +221,32 @@ void loop(){
         if (--newMeteorDuration == 0) {
             if (newMeteorType == METEOR_EMPTY) {
             	rand = random(2);
-            	newMeteorType = (rand == 0) ? METEOR_UPPER_BLOCK : METEOR_LOWER_BLOCK;
-                newMeteorDuration = 2 + random(3);
+            	newMeteorType = (rand == 0) ? METEOR_UPPER_BLOCK : METEOR_LOWER_BLOCK; // choose randomly of the upper or lower line for the new meteor
+                newMeteorDuration = 2 + random(3);// choose randomly of the duration of meteor character
             } else {
             	newMeteorType = METEOR_EMPTY;
-                newMeteorDuration = 2 + random(length);
+                newMeteorDuration = 2 + random(length); // choose randomly of the duration of empty character
             }
         }
 
-        if (!(PIND & 1<<PIND1)){
+        if (!(PIND & 1<<PIND1)){ // if second button press and if already at the upper position put a the lower position
         	if (shipPos == SHIP_POSITION_UPPER){
         		shipPos = SHIP_POSITION_LOWER;
         	}
         }
-        if (!(PIND & 1<<PIND0)){
+        if (!(PIND & 1<<PIND0)){// if first button press and if already at the lower position put a the upper position
             if (shipPos == SHIP_POSITION_LOWER){
               	shipPos = SHIP_POSITION_UPPER;
             }
         }
-
+	// loocking if the game still working
         if (drawShip(shipPos, terrainUpper, terrainLower,distance >> 3)){
         	playing = false; // The hero collided with something. Too bad.
         }else {
         	distance ++;
         }
 
-
+	// try to make hard the game during the time
         if(millis()-lastGameUpdateTick>gameUpdateInterval){
             lastGameUpdateTick = millis();
             counter ++;
